@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расчёт стоимости пошива</title>
+<style>
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#222;font-size:14px;}
+.container{max-width:1100px;margin:0 auto;}
+h1{font-size:20px;margin:0 0 16px;}
+.card{background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.header-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:600px){.header-grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:12px;color:#666;font-weight:500;}
+input,select,textarea{padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;font-family:inherit;width:100%;}
+input:focus,select:focus{outline:2px solid #4a90d9;border-color:transparent;}
+button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;background:#4a90d9;color:#fff;font-weight:500;}
+button:hover{background:#3a7bc0;}
+button.secondary{background:#e0e0e0;color:#333;}
+button.secondary:hover{background:#d0d0d0;}
+button.danger{background:#e74c3c;padding:4px 10px;font-size:12px;}
+button.danger:hover{background:#c0392b;}
+button.small{padding:4px 10px;font-size:12px;}
+button.green{background:#27ae60;}
+button.green:hover{background:#229954;}
+.room{border:1px solid #e0e0e0;border-radius:8px;margin-bottom:12px;}
+.room-header{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f9f9f9;border-radius:8px 8px 0 0;cursor:pointer;flex-wrap:wrap;}
+.room-header input[type="checkbox"]{width:auto;}
+.room-header select{width:auto;flex:1;max-width:200px;}
+.room-body{padding:14px;display:none;}
+.room.open .room-body{display:block;}
+.room-total{margin-left:auto;font-weight:600;color:#2c3e50;}
+.item{border:1px solid #eee;border-radius:6px;margin-bottom:12px;padding:12px;}
+.item-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:600;flex-wrap:wrap;}
+.item-header select{width:auto;flex:1;min-width:150px;}
+.row{display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr auto;gap:8px;margin-bottom:8px;align-items:center;}
+.dims{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:8px;margin-bottom:8px;align-items:center;}
+.dims span{font-size:13px;color:#555;}
+@media(max-width:700px){.dims{grid-template-columns:1fr 1fr;}}
+.sum{font-weight:600;color:#2c3e50;text-align:right;}
+.sum small{color:#e67e22;font-weight:500;font-size:11px;display:block;}
+.subtotal{display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed #ccc;margin-top:10px;font-weight:600;}
+.grand-total{display:flex;justify-content:space-between;font-size:20px;font-weight:700;padding:16px 0;border-top:2px solid #2c3e50;margin-top:16px;}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+.hint{font-size:12px;color:#888;margin:6px 0;}
+.line-row{display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:6px;align-items:center;font-size:13px;}
+.line-row.custom{grid-template-columns:2fr 1fr 1fr 1fr auto;}
+@media(max-width:700px){.line-row,.line-row.custom{grid-template-columns:1fr 1fr;}}
+.line-sum{font-weight:600;color:#2c3e50;text-align:right;padding-right:6px;}
+.markup-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
+@media(max-width:700px){.markup-list{grid-template-columns:1fr;}}
+.markup-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#fafafa;border-radius:6px;font-size:13px;flex-wrap:wrap;}
+.markup-item input[type="checkbox"]{width:auto;}
+.markup-item .pct{margin-left:auto;color:#666;font-weight:600;}
+.hidden{display:none;}
+.add-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.auto-block{background:#f0f7ff;border:1px solid #cce4ff;border-radius:6px;padding:10px;margin:10px 0;}
+.auto-title{font-size:12px;color:#2c5f9e;font-weight:600;margin-bottom:6px;}
+.auto-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:6px;align-items:center;}
+@media(max-width:700px){.auto-row{grid-template-columns:1fr 1fr;}}
+.auto-info{font-size:11px;color:#555;margin-top:4px;}
+.radio-group{display:flex;gap:8px;font-size:12px;flex-wrap:wrap;}
+.radio-group label{display:flex;align-items:center;gap:4px;cursor:pointer;}
+.radio-group input[type="radio"]{width:auto;}
+.synth-block{background:#f5fff0;border:1px solid #d4ecc5;border-radius:6px;padding:10px;margin:10px 0;}
+.synth-title{font-size:12px;color:#3d7a1a;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.synth-title input[type="checkbox"]{width:auto;}
+.master-block{background:#fdf5ff;border:1px solid #e8d0f0;border-radius:6px;padding:10px;margin:10px 0;}
+.master-title{font-size:12px;color:#7a3d99;font-weight:600;margin-bottom:6px;}
+.master-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;align-items:center;}
+@media(max-width:700px){.master-row{grid-template-columns:1fr;}}
+.saved-list{max-height:400px;overflow-y:auto;}
+.saved-item{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid #eee;}
+.saved-item:hover{background:#f9f9f9;}
+.saved-info{flex:1;}
+.saved-name{font-weight:600;}
+.saved-date{font-size:12px;color:#888;}
+.saved-sum{font-weight:600;color:#2c3e50;white-space:nowrap;}
+@media print{
+  @page{size:A4;margin:12mm;}
+  body{background:#fff;padding:0;font-size:10px;line-height:1.25;}
+  .no-print{display:none!important;}
+  .container{max-width:100%;}
+  .card{box-shadow:none;padding:0;margin:0;}
+  .print-doc{display:block!important;}
+  .print-doc h1{text-align:center;font-size:14px;margin:0 0 8px;letter-spacing:.5px;}
+  .print-header{font-size:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #000;}
+  .print-header div{display:inline-block;margin-right:16px;}
+  .print-room{margin-bottom:10px;page-break-inside:auto;}
+  .print-room h2{font-size:11px;font-weight:700;text-transform:uppercase;margin:8px 0 4px;padding:3px 0;border-bottom:1px solid #000;background:none;letter-spacing:.3px;}
+  .print-item{margin-bottom:4px;page-break-inside:avoid;}
+  .print-item h3{font-size:10px;font-weight:600;margin:0 0 2px;}
+  .print-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:2px;}
+  .print-table td{padding:1px 4px 1px 0;vertical-align:top;}
+  .print-table td:last-child{text-align:right;white-space:nowrap;padding-right:0;font-variant-numeric:tabular-nums;}
+  .print-subtotal{text-align:right;font-weight:600;font-size:10px;padding:2px 0 4px;margin-bottom:4px;}
+  .print-item .print-subtotal{border-top:0;font-size:10px;}
+  .print-room > .print-subtotal{border-top:1px solid #999;padding-top:3px;font-size:10px;}
+  .print-grand{text-align:right;font-size:13px;font-weight:700;padding:6px 0;border-top:2px solid #000;border-bottom:2px solid #000;margin-top:10px;}
+  .print-markups{font-size:10px;margin:6px 0;}
+  .print-markups div{margin-bottom:2px;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="no-print">
+  <h1>🧮 Расчёт стоимости пошива</h1>
+
+  <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="newOrder()">📄 Новый расчёт</button>
+    <button class="secondary" onclick="showSaved()">📁 Мои расчёты</button>
+    <button class="secondary" onclick="saveToCloud()">💾 Сохранить в список</button>
+    <button class="secondary" onclick="exportBackup()">📤 Резервная копия</button>
+    <button class="secondary" onclick="importBackup()">📥 Восстановить</button>
+  </div>
+
+  <div class="card" id="savedPanel" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <b>📁 Мои расчёты</b>
+      <button class="small secondary" onclick="hideSaved()">Закрыть</button>
+    </div>
+    <div class="saved-list" id="savedList"></div>
+  </div>
+
+  <div class="card">
+    <div class="header-grid">
+      <div class="field"><label>Номер заказа</label><input type="text" id="orderNum" placeholder="например, 244"></div>
+      <div class="field"><label>Дата готовности</label><input type="text" id="readyDate" placeholder="например, 15.10.2026"></div>
+      <div class="field"><label>Дизайнер</label><input type="text" id="designer" placeholder="ФИО дизайнера"></div>
+      <div class="field"><label>Название проекта</label><input type="text" id="projectName" placeholder="например, RED 7"></div>
+    </div>
+  </div>
+
+  <div id="roomsContainer"></div>
+  <button onclick="addRoom()" style="width:100%;padding:12px;">+ Добавить комнату</button>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="font-size:13px;color:#666;font-weight:600;margin-bottom:8px;">Общие наценки по заказу</div>
+    <div class="markup-list">
+      <div class="markup-item"><input type="checkbox" id="urgency50"><span>Срочно (3-4 дня)</span><span class="pct">+50%</span></div>
+      <div class="markup-item"><input type="checkbox" id="urgency100"><span>Очень срочно (1-2 дня)</span><span class="pct">+100%</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="subtotal"><span>Сумма по всем комнатам:</span><span id="roomsTotal">0 ₽</span></div>
+    <div class="subtotal"><span>Общие наценки:</span><span id="markupsTotal">0 ₽</span></div>
+    <div class="grand-total"><span>ИТОГО ПО ПРОЕКТУ:</span><span id="grandTotal">0 ₽</span></div>
+    <div class="actions">
+      <button onclick="printDoc()">🖨 Печать / PDF</button>
+      <button class="green" onclick="printMasters()">👥 Ведомость ЗП</button>
+    </div>
+  </div>
+</div>
+
+<div class="print-doc hidden" id="printDoc"></div>
+<div class="print-doc hidden" id="printMastersDoc"></div>
+</div>
+
+<script>
+// ==================== ПРАЙС ====================
+const PRICE = {
+  'Тюль': [
+    {name:'Пошив тюля с утяжелителем на шторной ленте',unit:'м',price:420},
+    {name:'Пошив тюля с подгибкой низа на шторной ленте',unit:'м',price:450},
+    {name:'Пошив тюля под люверсы',unit:'м',price:630},
+    {name:'Пошив тюля на ручной складке: бантовая, односторонняя, столбик',unit:'м',price:875},
+    {name:'Пошив тюля на ручной складке: двулистник, трехлистник, бокал',unit:'м',price:1000},
+    {name:'Пошив тюля "кафе"',unit:'м',price:490},
+  ],
+  'Портьеры без подкладки': [
+    {name:'Пошив портьеры без подкладки на шторной ленте',unit:'м',price:525},
+    {name:'Пошив портьеры без подкладки под люверсы',unit:'м',price:770},
+    {name:'Пошив портьеры без подкладки на шторной ленте с ручной складкой: бантовая, односторонняя, столбик',unit:'м',price:1000},
+    {name:'Пошив портьеры без подкладки на шторной ленте с ручной складкой: двулистник, трехлистник, бокал',unit:'м',price:1150},
+    {name:'Пошив портьеры без подкладки (полубесшовная) с ручной складкой: бантовая, односторонняя, столбик',unit:'м',price:1140},
+    {name:'Пошив портьеры без подкладки (полубесшовная) с ручной складкой: двулистник, трехлистник, бокал',unit:'м',price:1490},
+    {name:'Пошив портьеры без подкладки (бесшовная) с ручной складкой: бантовая, односторонняя, столбик',unit:'м',price:1300},
+    {name:'Пошив портьеры без подкладки (бесшовная) с ручной складкой: двулистник, трехлистник, бокал',unit:'м',price:1600},
+  ],
+  'Портьеры на подкладке': [
+    {name:'Пошив портьеры на подкладке на шторной ленте',unit:'м',price:770},
+    {name:'Пошив портьеры на подкладке под люверсы',unit:'м',price:1050},
+    {name:'Пошив портьеры на подкладке на шторной ленте и ручной складкой: бантовая, односторонняя, столбик',unit:'м',price:1400},
+    {name:'Пошив портьеры на подкладке на шторной ленте и ручной складкой: двулистник, трехлистник, бокал',unit:'м',price:1800},
+    {name:'Пошив портьеры на подкладке (полубесшовная) с ручной складкой: бантовая, односторонняя, столбик',unit:'м',price:1550},
+    {name:'Пошив портьеры на подкладке (полубесшовная) с ручной складкой: двулистник, трехлистник, бокал',unit:'м',price:1900},
+    {name:'Пошив портьеры на подкладке (бесшовная) с ручной складкой: бантовая, односторонняя, столбик',unit:'м',price:1720},
+    {name:'Пошив портьеры на подкладке (бесшовная) с ручной складкой: двулистник, трехлистник, бокал',unit:'м',price:2100},
+    {name:'Прокладка из мулетона, блэкаута, димаута',unit:'м',price:525},
+  ],
+  'Римские шторы': [
+    {name:'Пошив римской шторы без подкладки на тесьме',unit:'кв.м',price:1450},
+    {name:'Пошив римской шторы без подкладки на кулисках',unit:'кв.м',price:1550},
+    {name:'Пошив римской шторы на подкладке на тесьме',unit:'кв.м',price:1600},
+    {name:'Пошив римской шторы на подкладке на кулисках',unit:'кв.м',price:1800},
+  ],
+  'Ламбрекены': [
+    {name:'Ламбрекен на шторной ленте без сборки с прямым низом',unit:'м',price:320},
+    {name:'Ламбрекен на шторной ленте с фигурным низом',unit:'м',price:450},
+    {name:'Сваг/перекид до 120 см',unit:'шт',price:1500},
+    {name:'Сваг/перекид до 160 см',unit:'шт',price:1800},
+    {name:'Сваг/перекид более 160 см',unit:'шт',price:2000},
+    {name:'Сваг, переходящий в джабот, до 100 см',unit:'шт',price:2200},
+    {name:'Сваг, переходящий в джабот, более 100 см',unit:'шт',price:2500},
+    {name:'Сваг вертикальный',unit:'м',price:1600},
+    {name:'Джабот',unit:'шт',price:1200},
+    {name:'Кокилье',unit:'шт',price:1200},
+    {name:'Колокольчик',unit:'шт',price:800},
+    {name:'Галстук',unit:'шт',price:900},
+    {name:'Пояс для ламбрекена',unit:'м',price:250},
+    {name:'Стянуть ламбрекен под размер',unit:'м',price:80},
+    {name:'Собрать ламбрекен под размер',unit:'м',price:300},
+  ],
+  'Бандо': [
+    {name:'Пошив бандо с прямым краем до 40 см высотой',unit:'м',price:800},
+    {name:'Пошив бандо с фигурным краем до 40 см высотой',unit:'м',price:1500},
+  ],
+  'Покрывала и подушки': [
+    {name:'Покрывало-плед с обработкой края швом вподгибку и евроуголками',unit:'кв.м',price:650},
+    {name:'Покрывало-плед на подкладке с обработкой края швом вподгибку и евроуголками',unit:'кв.м',price:850},
+    {name:'Покрывало на подкладке с синтепоном',unit:'кв.м',price:700},
+    {name:'Стёжка на синтепоне, рисунок менее 30х30 см',unit:'кв.м',price:2000},
+    {name:'Стёжка на синтепоне, рисунок более 30х30 см',unit:'кв.м',price:1600},
+    {name:'Стёжка на синтепоне линиями шагом менее 30 см',unit:'кв.м',price:1500},
+    {name:'Стёжка на синтепоне линиями шагом более 30 см',unit:'кв.м',price:850},
+    {name:'Чехол на молнии без декора до 50x50 см',unit:'шт',price:450},
+    {name:'Чехол на молнии без декора более 50x50 см',unit:'шт',price:550},
+    {name:'Чехол на молнии с декором до 50x50 см',unit:'шт',price:500},
+    {name:'Чехол на молнии с декором более 50x50 см',unit:'шт',price:600},
+    {name:'Чехол на молнии в рамку 50x50',unit:'шт',price:700},
+    {name:'Чехол на молнии в рамку притачную 50x50',unit:'шт',price:900},
+    {name:'Чехол на валик до 1 м',unit:'шт',price:800},
+    {name:'Валик поролоновый d 20 см до 1 м',unit:'шт',price:800},
+    {name:'Внутренний чехол на валик из таффеты',unit:'шт',price:800},
+    {name:'Внутренняя подушка до 50x50 см',unit:'шт',price:500},
+    {name:'Внутренняя подушка более 50x50 см',unit:'шт',price:700},
+    {name:'Внутренняя подушка без наполнителя 50x50',unit:'шт',price:250},
+    {name:'Внутренняя подушка без наполнителя более 50x50',unit:'шт',price:350},
+    {name:'Уплотнение чехла из синтепона и подкладки',unit:'шт',price:300},
+  ],
+  'Столовый текстиль, чехлы': [
+    {name:'Салфетка до 45x45 см, евроуголки',unit:'шт',price:400},
+    {name:'Скатерть прямоугольная, крой',unit:'кв.м',price:120},
+    {name:'Скатерть круглая, крой',unit:'кв.м',price:140},
+    {name:'Обработка края оборкой в готовом виде',unit:'м',price:700},
+    {name:'Обработка края швом вподгибку 2-5 см, евроуголки',unit:'м',price:270},
+    {name:'Обработка края обтачкой, бейкой',unit:'м',price:400},
+    {name:'Обработка края двойным кантом',unit:'м',price:500},
+    {name:'Чехол на стул простой модели',unit:'шт',price:3300},
+    {name:'Чехол мебельный с бортиком до 75x75 см',unit:'шт',price:2600},
+    {name:'Чехол мебельный с бортиком более 75x75 см',unit:'шт',price:3000},
+    {name:'Подушка-сидушка',unit:'шт',price:1400},
+    {name:'Сиденье на стул простой модели',unit:'шт',price:1000},
+  ],
+};
+
+const EXTRA_OPS = [
+  {name:'Стачной шов',unit:'м',price:200},
+  {name:'Притачивание декоративной тесьмы, шнура, бахромы, бордюра, косой бейки',unit:'м',price:300},
+  {name:'Притачивание пушистого канта',unit:'м',price:500},
+  {name:'Притачивание декоративной тесьмы со сложным декором',unit:'м',price:500},
+  {name:'Изготовление и притачивание одинарного канта',unit:'м',price:450},
+  {name:'Изготовление и притачивание двойного канта',unit:'м',price:550},
+  {name:'Изготовление и притачивание двойного канта + клеевая',unit:'м',price:600},
+  {name:'Изготовление и притачивание канта-рулика',unit:'м',price:350},
+  {name:'Обработка края оборкой',unit:'м',price:700},
+  {name:'Обработка края оборкой сложенной вдвое',unit:'м',price:500},
+  {name:'Обработка края обтачкой, бейкой',unit:'м',price:400},
+  {name:'Евроуголок на кантах, бордюрах, покрывалах, шторах',unit:'шт',price:350},
+  {name:'Евроуголок на декоративной тесьме',unit:'шт',price:110},
+  {name:'Петли, завязки',unit:'шт',price:100},
+  {name:'Петли прямые на липучке',unit:'шт',price:120},
+  {name:'Пришивание пуговиц, грузиков, кисточек',unit:'шт',price:50},
+  {name:'Обтяжка пуговицы тканью',unit:'шт',price:100},
+  {name:'Подхват простой',unit:'шт',price:500},
+  {name:'Подхват фигурный',unit:'шт',price:700},
+  {name:'Подхват прямой на жесткой основе',unit:'шт',price:900},
+  {name:'Подхват фигурный на жесткой основе',unit:'шт',price:1100},
+  {name:'Пришить колечко к кулиске',unit:'шт',price:50},
+  {name:'Вставить колечко в шторную ленту',unit:'кв.м',price:100},
+  {name:'Карман под утяжелитель',unit:'м',price:250},
+  {name:'Ушки на римской шторе (пара)',unit:'шт',price:1000},
+  {name:'Сборка римской шторы на карниз',unit:'кв.м',price:200},
+  {name:'Подбор раппорта',unit:'%',price:10},
+  {name:'Дополнительная ВТО',unit:'м',price:200},
+  {name:'Демонтаж строчки',unit:'м',price:60},
+  {name:'Гребешок',unit:'м',price:145},
+  {name:'Установка люверсов',unit:'шт',price:100},
+  {name:'Надставка для увеличения высоты',unit:'м',price:300},
+  {name:'Центровка шторной ленты',unit:'м',price:70},
+  {name:'Стянуть шторную ленту под размер',unit:'м',price:90},
+  {name:'Строчка на прямострочной машине',unit:'м',price:145},
+  {name:'Строчка на потайной машине',unit:'м',price:200},
+  {name:'Строчка потайная ручная',unit:'м',price:850},
+  {name:'Шов "американка"',unit:'м',price:200},
+  {name:'Закрепка на шторной ленте',unit:'шт',price:100},
+  {name:'Закрепка на покрывалах',unit:'шт',price:150},
+  {name:'Вынуть утяжелительный шнур',unit:'м',price:200},
+  {name:'Подгибка низа в 1 слой',unit:'м',price:95},
+  {name:'Подгибка низа с репсовой лентой',unit:'м',price:200},
+  {name:'Подгибка низа с руликом',unit:'м',price:200},
+  {name:'Кармашек под грузик',unit:'шт',price:70},
+  {name:'Кармашек из шторной ленты для кордов',unit:'шт',price:50},
+  {name:'Стачивание полотен швом "американка"',unit:'м',price:250},
+  {name:'Стачивание полотен бельевыми швами',unit:'м',price:200},
+  {name:'Стачивание полотен (строчка+оверлок)',unit:'м',price:200},
+];
+
+const SEAM_TYPES = [{idx:0, name:'Стачной шов'}];
+const DECOR_TYPES = [1,2,3,4,5,6,7,8,9,10];
+
+const SYNTH_TYPES = [
+  {matIdx: 12, name:'Синтепон 280 см, 100 гр', price:500},
+  {matIdx: 13, name:'Синтепон "термостежка" 280 см', price:600},
+];
+
+const MATERIALS = [
+  {name:'Шторная лента с кордами 6 см, 1:2',unit:'м',price:80},
+  {name:'Шторная лента с кордами 8 см, 1:2',unit:'м',price:90},
+  {name:'Шторная лента с кордами 10 см, 1:2',unit:'м',price:110},
+  {name:'Шторная лента без кордов 8 см',unit:'м',price:110},
+  {name:'Шторная лента без кордов 10 см',unit:'м',price:130},
+  {name:'Шторная лента без кордов 12 см',unit:'м',price:150},
+  {name:'Шторная лента для римских штор',unit:'м',price:60},
+  {name:'Люверсная лента',unit:'м',price:120},
+  {name:'Колечки для римских штор',unit:'шт',price:12},
+  {name:'Кнопка пластиковая прозрачная',unit:'шт',price:20},
+  {name:'Зажим прозрачный для римских штор',unit:'шт',price:14},
+  {name:'Лента липучка "велкро" 2,5 см',unit:'м',price:60},
+  {name:'Синтепон 280 см, 100 гр',unit:'м',price:500},
+  {name:'Синтепон "термостежка" 280 см',unit:'м',price:600},
+  {name:'Таффета, тонкая подкладка для чехлов',unit:'м',price:300},
+  {name:'Молния потайная',unit:'м',price:80},
+  {name:'Утяжелитель 13 гр',unit:'шт',price:100},
+  {name:'Утяжелитель 25 гр',unit:'шт',price:120},
+  {name:'Утяжелитель 50 гр',unit:'шт',price:180},
+];
+
+const MARKUPS = [
+  {id:'complex_fabric',name:'Сложные ткани (бархат, шенилл, вышивка, blackout)',pct:40},
+  {id:'mesh_lace',name:'Сетка, кружево, жатки',pct:30},
+  {id:'heavy',name:'Вес более 8 кг',pct:30},
+  {id:'slanted',name:'Наклонные окна',pct:50},
+  {id:'arch',name:'Арочные окна',pct:50},
+  {id:'rapport',name:'Подбор раппорта',pct:10},
+  {id:'remake',name:'Перешив изделия',pct:30},
+  {id:'roman_combo',name:'Комбинированные римские',pct:15},
+  {id:'lambrequin_lining',name:'Ламбрекен на подкладке',pct:30},
+  {id:'bando_multi',name:'Бандо из нескольких тканей',pct:50},
+  {id:'bando_lining',name:'Бандо на подкладке',pct:50},
+];
+
+let state = {orderNum:'', readyDate:'', designer:'', projectName:'', rooms:[], urgency50:false, urgency100:false};
+let roomCounter = 0;
+let itemCounter = 0;
+const ROOM_NAMES = ['Гостиная','Спальня','Детская','Кухня','Ванная','Прихожая','Кабинет'];
+
+// Экранирование текста, введённого пользователем (кавычки и < не ломают разметку)
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function isCoverCategory(cat){ return cat === 'Покрывала и подушки'; }
+function isCoverWork(wn){ return /Покрывало/i.test(wn||''); }
+function isTulleCategory(cat){ return cat === 'Тюль'; }
+function isPorteraCategory(cat){ return cat === 'Портьеры на подкладке' || cat === 'Портьеры без подкладки'; }
+function isRomanCategory(cat){ return cat === 'Римские шторы'; }
+
+function addRoom(){
+  state.rooms.push({id:'room_'+(++roomCounter),name:'Гостиная',customName:'',enabled:true,open:true,items:[]});
+  render();
+}
+function removeRoom(rid){
+  if(!confirm('Удалить комнату со всеми изделиями?')) return;
+  state.rooms = state.rooms.filter(r=>r.id!==rid);
+  render();
+}
+function toggleRoom(rid,f){
+  const r = state.rooms.find(x=>x.id===rid);
+  if(!r) return;
+  if(f==='enabled') r.enabled = !r.enabled;
+  if(f==='open') r.open = !r.open;
+  render();
+}
+function setRoomName(rid,v){ const r = state.rooms.find(x=>x.id===rid); if(r){ r.name = v; render(); } }
+function setCustomName(rid,v){ const r = state.rooms.find(x=>x.id===rid); if(r) r.customName = v; }
+
+function addItem(rid){
+  const r = state.rooms.find(x=>x.id===rid);
+  if(!r) return;
+  r.items.push({
+    id:'item_'+(++itemCounter),
+    category:'Портьеры на подкладке',
+    mainWork:'', mainQty:1,
+    lines:[], markups:{}, height:'', width:'',
+    seamType:0, seamVert:0, seamHoriz:0,
+    decorIdx:DECOR_TYPES[0], decorDir:'perimeter', decorCount:0,
+    synthEnabled:false, synthType:0,
+    velcroEnabled:false,
+    romanCircles:false, romanAssembly:false,
+    masterIdx:0, masterCuts:true
+  });
+  render();
+}
+function removeItem(rid,iid){
+  const r = state.rooms.find(x=>x.id===rid);
+  if(!r) return;
+  r.items = r.items.filter(i=>i.id!==iid);
+  render();
+}
+function getItem(rid,iid){
+  const r = state.rooms.find(x=>x.id===rid);
+  return r ? r.items.find(i=>i.id===iid) : null;
+}
+function updateItem(rid,iid,f,v){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  it[f] = v;
+  // Автовключение синтепона
+  if(f==='mainWork' && isCoverCategory(it.category) && isCoverWork(v)) it.synthEnabled = true;
+  if(f==='category'){
+    if(!isCoverCategory(v)) it.synthEnabled = false;
+    it.velcroEnabled = isRomanCategory(v);
+    if(!isRomanCategory(v)){
+      it.romanCircles = false;
+      it.romanAssembly = false;
+    }
+  }
+  // Автовыбор "кроит сама" при выборе швеи
+  if(f==='masterIdx'){
+    it.masterCuts = (v === 0); // Швея 1 (индекс 0) по умолчанию кроит сама
+  }
+}
+
+function updateMainQty(rid,iid,v){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  const nq = parseFloat(v)||0;
+  it.mainQty = nq;
+  it.lines.forEach(l=>{
+    if(l.source==='material' && MATERIALS[l.ref] && /Шторная лента/.test(MATERIALS[l.ref].name)){
+      if(l.autoSync) l.qty = nq;
+    }
+  });
+  recalc();
+}
+
+function autoAddTape(rid,iid){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  if(!/шторной ленте|шт\. ленте|по шт\.л/i.test(it.mainWork||'')) return;
+  const hasTape = it.lines.some(l=>l.source==='material' && MATERIALS[l.ref] && /Шторная лента/.test(MATERIALS[l.ref].name));
+  if(hasTape) return;
+  const ti = MATERIALS.findIndex(m=>m.name==='Шторная лента с кордами 6 см, 1:2');
+  if(ti>=0) it.lines.push({source:'material',ref:ti,qty:it.mainQty||0,autoSync:true});
+}
+
+function addLine(rid,iid,src){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  if(src==='extra') it.lines.push({source:'extra',ref:0,qty:1});
+  if(src==='material') it.lines.push({source:'material',ref:0,qty:1});
+  if(src==='custom') it.lines.push({source:'custom',ref:-1,qty:1,name:'',price:0,unit:'м'});
+  render();
+}
+function removeLine(rid,iid,idx){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  it.lines.splice(idx,1);
+  render();
+}
+function updateLine(rid,iid,idx,f,v){
+  const it = getItem(rid,iid);
+  if(!it || !it.lines[idx]) return;
+  const l = it.lines[idx];
+  if(f==='ref'){ l.ref = parseInt(v); render(); return; }
+  if(f==='qty'){ l.qty = parseFloat(v)||0; l.autoSync = false; }
+  if(f==='name') l.name = v;
+  if(f==='price') l.price = parseFloat(v)||0;
+  if(f==='unit') l.unit = v;
+  if(f==='note') l.note = v;
+  recalc();
+}
+
+function toggleMarkup(rid,iid,mid){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  if(!it.markups) it.markups = {};
+  if(it.markups[mid]) delete it.markups[mid];
+  else it.markups[mid] = {base:'base'};
+  render();
+}
+function setMarkupBase(rid,iid,mid,base){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  if(!it.markups) it.markups = {};
+  if(!it.markups[mid] || typeof it.markups[mid] !== 'object') it.markups[mid] = {base:'base'};
+  it.markups[mid].base = base;
+  render();
+}
+
+// Взаимоисключение для римских
+function toggleRomanCircles(rid,iid,val){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  it.romanCircles = val;
+  if(val) it.romanAssembly = false;
+  render();
+}
+function toggleRomanAssembly(rid,iid,val){
+  const it = getItem(rid,iid);
+  if(!it) return;
+  it.romanAssembly = val;
+  if(val) it.romanCircles = false;
+  render();
+}
+
+function fmt(n){ return Math.round(n).toLocaleString('ru-RU')+' ₽'; }
+
+function getMainWork(it){
+  const list = PRICE[it.category]||[];
+  return list.find(w=>w.name===it.mainWork) || null;
+}
+
+// Минимум 2м для портьер и тюля (только для основной работы)
+function getEffectiveQty(it){
+  let q = parseFloat(it.mainQty)||0;
+  if((isTulleCategory(it.category) || isPorteraCategory(it.category)) && q < 2 && q > 0){
+    q = 2;
+  }
+  return q;
+}
+
+function calcDecorMeters(it){
+  const h = parseFloat(it.height)||0;
+  const w = parseFloat(it.width)||0;
+  const c = parseFloat(it.decorCount)||0;
+  if(c <= 0) return 0;
+  if(it.decorDir === 'vert') return c * h;
+  if(it.decorDir === 'horiz') return c * w;
+  if(it.decorDir === 'perimeter') return c * 2 * (w + h);
+  return 0;
+}
+
+function calcItem(it){
+  const work = getMainWork(it);
+  const r = {base:0,effectivePrice:0,basePct:0,baseWithMarkups:0,baseMarkupsSum:0,
+    linesSum:0,materialsSum:0,volumeMarkupsSum:0,workVolume:0,
+    total:0,work:null,qty:0,linesList:[],volumeMarkupsList:[],baseMarkupsList:[]};
+  if(!work) return r;
+
+  const rawQty = parseFloat(it.mainQty)||0;
+  const effQty = getEffectiveQty(it); // с минимумом 2м
+  const base = work.price * effQty;
+  r.work = work; r.qty = rawQty; r.effQty = effQty; r.base = base;
+
+  let linesSum = 0, materialsSum = 0;
+  const linesList = [];
+  const h = parseFloat(it.height)||0;
+  const w = parseFloat(it.width)||0;
+
+  // Стачные швы (авто)
+  const seamOp = EXTRA_OPS[0];
+  if(seamOp && it.seamVert > 0 && h > 0){
+    const q = it.seamVert * h;
+    const sum = q * seamOp.price;
+    linesSum += sum;
+    linesList.push({name:seamOp.name+' (вертикальный, '+it.seamVert+' шт.)',unit:'м',qty:q,price:seamOp.price,sum,source:'extra',auto:true});
+  }
+  if(seamOp && it.seamHoriz > 0 && w > 0){
+    const q = it.seamHoriz * w;
+    const sum = q * seamOp.price;
+    linesSum += sum;
+    linesList.push({name:seamOp.name+' (горизонтальный, '+it.seamHoriz+' шт.)',unit:'м',qty:q,price:seamOp.price,sum,source:'extra',auto:true});
+  }
+
+  // Декор (авто)
+  const decorOp = EXTRA_OPS[it.decorIdx];
+  const decorM = calcDecorMeters(it);
+  if(decorOp && decorM > 0){
+    const sum = decorM * decorOp.price;
+    linesSum += sum;
+    const dir = it.decorDir==='vert'?'верт.':(it.decorDir==='horiz'?'гориз.':'по периметру');
+    linesList.push({name:decorOp.name+' ('+dir+', '+it.decorCount+' шт.)',unit:'м',qty:decorM,price:decorOp.price,sum,source:'extra',auto:true});
+  }
+
+  // Липучка велкро (авто, для римских)
+  if(it.velcroEnabled && w > 0){
+    const vi = MATERIALS.findIndex(m=>m.name==='Лента липучка "велкро" 2,5 см');
+    if(vi>=0){
+      const mat = MATERIALS[vi];
+      const sum = mat.price * w;
+      linesSum += sum; materialsSum += sum;
+      linesList.push({name:mat.name+' (авто, по ширине шторы)',unit:'м',qty:w,price:mat.price,sum,source:'material',auto:true});
+    }
+  }
+
+  // Колечки для римских (авто, опционально)
+  if(it.romanCircles && w > 0 && h > 0){
+    const op = EXTRA_OPS[22]; // Вставить колечко в шторную ленту
+    const area = w * h;
+    const sum = area * op.price;
+    linesSum += sum;
+    linesList.push({name:op.name+' (авто, площадь '+area.toFixed(2)+' кв.м)',unit:'кв.м',qty:area,price:op.price,sum,source:'extra',auto:true});
+  }
+
+  // Сборка на карниз (авто, опционально)
+  if(it.romanAssembly && w > 0 && h > 0){
+    const op = EXTRA_OPS[25]; // Сборка римской шторы на карниз
+    const area = w * h;
+    const sum = area * op.price;
+    linesSum += sum;
+    linesList.push({name:op.name+' (авто, площадь '+area.toFixed(2)+' кв.м)',unit:'кв.м',qty:area,price:op.price,sum,source:'extra',auto:true});
+  }
+
+  // Синтепон (авто, для покрывал)
+  if(it.synthEnabled && w > 0 && h > 0){
+    const synth = SYNTH_TYPES[it.synthType||0];
+    const sq = Math.min(w, h);
+    if(sq > 0){
+      const sum = synth.price * sq;
+      linesSum += sum; materialsSum += sum;
+      linesList.push({name:synth.name+' (авто, по короткой стороне)',unit:'м',qty:sq,price:synth.price,sum,source:'material',auto:true});
+    }
+  }
+
+  // Обычные строки
+  (it.lines||[]).forEach(l=>{
+    let name='',unit='',price=0;
+    if(l.source==='extra'){
+      const op=EXTRA_OPS[l.ref]; if(op){name=op.name;unit=op.unit;price=op.price;}
+    } else if(l.source==='material'){
+      const mat=MATERIALS[l.ref]; if(mat){name=mat.name;unit=mat.unit;price=mat.price;}
+    } else {
+      name=l.name||'Своя операция'; unit=l.unit||'м'; price=l.price||0;
+    }
+    if(name){
+      const sum = price * (l.qty||0);
+      linesSum += sum;
+      if(l.source==='material') materialsSum += sum;
+      const dn = l.note ? name+' — '+l.note : name;
+      linesList.push({name:dn,unit,qty:l.qty||0,price,sum,source:l.source});
+    }
+  });
+  r.linesSum = linesSum; r.materialsSum = materialsSum; r.linesList = linesList;
+
+  // Базовые наценки
+  let basePct = 0;
+  const baseMarkupsList = [], volumeMarkupsList = [];
+  const mk = it.markups||{};
+  MARKUPS.forEach(m=>{
+    const val = mk[m.id];
+    if(!val) return;
+    const bt = (typeof val==='object' && val.base) ? val.base : 'base';
+    if(bt==='base'){ basePct += m.pct; baseMarkupsList.push({name:m.name,pct:m.pct}); }
+    else { volumeMarkupsList.push({name:m.name,pct:m.pct}); }
+  });
+
+  // Наценка за высоту (вариант А: floor)
+  if(h > 3.1){
+    const extra = Math.floor(h - 3.1);
+    const pct = extra * 30;
+    if(pct > 0){
+      basePct += pct;
+      baseMarkupsList.push({name:`Высота >3,1 м (+${pct}% за ${extra} м)`,pct});
+    }
+  }
+
+  const effPrice = work.price * (1 + basePct/100);
+  const baseWithMarkups = effPrice * effQty;
+  const baseMarkupsSum = baseWithMarkups - base;
+  r.effectivePrice = effPrice; r.basePct = basePct;
+  r.baseWithMarkups = baseWithMarkups; r.baseMarkupsSum = baseMarkupsSum;
+  r.baseMarkupsList = baseMarkupsList;
+
+  // Объёмные наценки (от пошива с базовыми + допы без материалов)
+  const workVolume = baseWithMarkups + (linesSum - materialsSum);
+  r.workVolume = workVolume;
+  let vms = 0;
+  const vmList = [];
+  volumeMarkupsList.forEach(m=>{
+    const sum = workVolume * m.pct / 100;
+    vms += sum;
+    vmList.push({name:m.name,pct:m.pct,sum});
+  });
+  r.volumeMarkupsSum = vms; r.volumeMarkupsList = vmList;
+  r.total = baseWithMarkups + linesSum + vms;
+  return r;
+}
+
+function calcRoom(r){
+  if(!r.enabled) return 0;
+  return (r.items||[]).reduce((s,i)=>s+calcItem(i).total,0);
+}
+function calcAllRooms(){ return state.rooms.reduce((s,r)=>s+calcRoom(r),0); }
+function urgencyPct(st){ return (st.urgency50?0.5:0) + (st.urgency100?1.0:0); }
+
+function recalc(){
+  const rt = calcAllRooms();
+  const mt = rt * urgencyPct(state);
+  const e1=document.getElementById('roomsTotal');
+  const e2=document.getElementById('markupsTotal');
+  const e3=document.getElementById('grandTotal');
+  if(e1) e1.textContent = fmt(rt);
+  if(e2) e2.textContent = fmt(mt);
+  if(e3) e3.textContent = fmt(rt+mt);
+  state.rooms.forEach(r=>{
+    const el = document.getElementById('room_total_'+r.id);
+    if(el) el.textContent = fmt(calcRoom(r));
+  });
+}
+
+// ==================== ОТРИСОВКА ====================
+function render(){
+  const c = document.getElementById('roomsContainer');
+  if(!c) return;
+  c.innerHTML = '';
+  state.rooms.forEach(r=>{
+    const d = document.createElement('div');
+    d.className = 'room'+(r.open?' open':'');
+    d.innerHTML = renderRoom(r);
+    c.appendChild(d);
+  });
+  recalc();
+}
+
+function renderRoom(r){
+  const rt = fmt(calcRoom(r));
+  let ih = '';
+  r.items.forEach(it=>{ ih += renderItem(r,it); });
+  const ni = r.name==='custom'
+    ? `<input type="text" value="${esc(r.customName)}" placeholder="Название" oninput="setCustomName('${r.id}',this.value)" style="flex:1;max-width:200px;">`
+    : '';
+  return `
+    <div class="room-header">
+      <input type="checkbox" ${r.enabled?'checked':''} onchange="toggleRoom('${r.id}','enabled')">
+      <select onchange="setRoomName('${r.id}',this.value)">
+        ${ROOM_NAMES.map(n=>`<option ${r.name===n?'selected':''}>${n}</option>`).join('')}
+        <option value="custom" ${r.name==='custom'?'selected':''}>Своё название...</option>
+      </select>
+      ${ni}
+      <span class="room-total" id="room_total_${r.id}">${rt}</span>
+      <button class="small secondary" onclick="event.stopPropagation();toggleRoom('${r.id}','open')">${r.open?'▼':'▶'}</button>
+      <button class="danger" onclick="event.stopPropagation();removeRoom('${r.id}')">✕</button>
+    </div>
+    <div class="room-body">
+      ${ih}
+      <button class="small" onclick="addItem('${r.id}')">+ Добавить изделие</button>
+    </div>`;
+}
+
+function renderItem(r,it){
+  const c = calcItem(it);
+  const cats = Object.keys(PRICE);
+  const works = PRICE[it.category]||[];
+  const h = parseFloat(it.height)||0;
+  const w = parseFloat(it.width)||0;
+
+  // Основная работа — с учётом минимума 2м
+  const rawQ = parseFloat(it.mainQty)||0;
+  const effQ = c.effQty || rawQ;
+  const minLabel = (effQ > rawQ && rawQ > 0) ? ` <small style="color:#e67e22">(мин. 2 м)</small>` : '';
+
+  const pl = c.work
+    ? (c.basePct > 0 ? `${Math.round(c.effectivePrice)} ₽ <small>${c.work.price} + ${c.basePct}%</small>` : `${c.work.price} ₽`)
+    : '—';
+
+  const mainRow = `
+    <div class="row">
+      <select onchange="updateItem('${r.id}','${it.id}','mainWork',this.value);autoAddTape('${r.id}','${it.id}');render();">
+        <option value="">— выберите работу —</option>
+        ${works.map(x=>`<option ${it.mainWork===x.name?'selected':''}>${x.name}</option>`).join('')}
+      </select>
+      <input type="number" value="${it.mainQty}" step="0.1" min="0" oninput="updateMainQty('${r.id}','${it.id}',this.value);" onchange="render();">
+      <span>${c.work?c.work.unit:''}${minLabel}</span>
+      <span class="sum">${c.work?fmt(c.baseWithMarkups):'—'}</span>
+      <span></span>
+    </div>
+    ${c.work ? `<div class="hint">${pl}</div>` : ''}`;
+
+  const dims = `
+    <div class="dims">
+      <span>Ширина (м)</span>
+      <input type="number" value="${it.width||''}" step="0.01" min="0" oninput="updateItem('${r.id}','${it.id}','width',this.value);recalc();" onchange="render();">
+      <span>Высота (м)</span>
+      <input type="number" value="${it.height||''}" step="0.01" min="0" oninput="updateItem('${r.id}','${it.id}','height',this.value);recalc();" onchange="render();">
+    </div>
+    <div class="hint">Высота &gt;3,1 м — +30% за каждый полный метр</div>`;
+
+  const autoSeam = `
+    <div class="auto-block">
+      <div class="auto-title">🧵 Авторасчёт стачных швов (${EXTRA_OPS[0].price} ₽/м)</div>
+      <div class="auto-row">
+        <div></div>
+        <div><label style="font-size:11px;color:#555;">Вертикальных</label>
+          <input type="number" value="${it.seamVert||0}" min="0" step="1" oninput="updateItem('${r.id}','${it.id}','seamVert',parseInt(this.value)||0);recalc();" onchange="render();"></div>
+        <div><label style="font-size:11px;color:#555;">Горизонтальных</label>
+          <input type="number" value="${it.seamHoriz||0}" min="0" step="1" oninput="updateItem('${r.id}','${it.id}','seamHoriz',parseInt(this.value)||0);recalc();" onchange="render();"></div>
+      </div>
+      <div class="auto-info">
+        Верт. = кол-во × высота. Гориз. = кол-во × ширина.
+        ${it.seamVert>0 && it.height ? ` Верт.: ${it.seamVert} × ${it.height} = ${(it.seamVert*h).toFixed(2)} м.` : ''}
+        ${it.seamHoriz>0 && it.width ? ` Гориз.: ${it.seamHoriz} × ${it.width} = ${(it.seamHoriz*w).toFixed(2)} м.` : ''}
+      </div>
+    </div>`;
+
+  const decorM = calcDecorMeters(it);
+  const curDec = EXTRA_OPS[it.decorIdx]||EXTRA_OPS[DECOR_TYPES[0]];
+  const autoDecor = `
+    <div class="auto-block">
+      <div class="auto-title">✨ Авторасчёт декора (притачивание)</div>
+      <div class="auto-row">
+        <select onchange="updateItem('${r.id}','${it.id}','decorIdx',parseInt(this.value));render();">
+          ${DECOR_TYPES.map(i=>`<option value="${i}" ${it.decorIdx===i?'selected':''}>${EXTRA_OPS[i].name} — ${EXTRA_OPS[i].price} ₽/м</option>`).join('')}
+        </select>
+        <div><label style="font-size:11px;color:#555;">Кол-во</label>
+          <input type="number" value="${it.decorCount||0}" min="0" step="1" oninput="updateItem('${r.id}','${it.id}','decorCount',parseFloat(this.value)||0);recalc();" onchange="render();"></div>
+        <div></div>
+      </div>
+      <div class="radio-group" style="margin-bottom:6px;">
+        <label><input type="radio" name="dd_${it.id}" value="vert" ${it.decorDir==='vert'?'checked':''} onchange="updateItem('${r.id}','${it.id}','decorDir','vert');render();"> Вертикально</label>
+        <label><input type="radio" name="dd_${it.id}" value="horiz" ${it.decorDir==='horiz'?'checked':''} onchange="updateItem('${r.id}','${it.id}','decorDir','horiz');render();"> Горизонтально</label>
+        <label><input type="radio" name="dd_${it.id}" value="perimeter" ${it.decorDir==='perimeter'?'checked':''} onchange="updateItem('${r.id}','${it.id}','decorDir','perimeter');render();"> По периметру</label>
+      </div>
+      <div class="auto-info">
+        ${it.decorDir==='vert'?'Метраж = кол-во × высота.':''}
+        ${it.decorDir==='horiz'?'Метраж = кол-во × ширина.':''}
+        ${it.decorDir==='perimeter'?'Метраж = кол-во × 2 × (ш + в).':''}
+        ${decorM>0?` Сейчас: <b>${decorM.toFixed(2)} м</b> × ${curDec.price} ₽ = ${fmt(decorM*curDec.price)}`:' Введите кол-во > 0.'}
+      </div>
+    </div>`;
+
+  // Блок римских штор (липучка + взаимоисключающие)
+  const vi = MATERIALS.findIndex(m=>m.name==='Лента липучка "велкро" 2,5 см');
+  const vp = vi>=0?MATERIALS[vi].price:60;
+  const romanBlock = isRomanCategory(it.category) ? `
+    <div class="synth-block" style="background:#fff8ec;border-color:#f0d9a8;">
+      <label class="synth-title" style="color:#8a5a1a;">
+        <input type="checkbox" ${it.velcroEnabled?'checked':''} onchange="updateItem('${r.id}','${it.id}','velcroEnabled',this.checked);render();">
+        Липучка велкро (авто, по ширине шторы)
+      </label>
+      ${it.velcroEnabled && w ? `<div class="auto-info">Метраж = ширина = <b>${w.toFixed(2)} м</b> × ${vp} ₽ = ${fmt(w*vp)}</div>` : ''}
+      <div style="margin-top:8px;border-top:1px dashed #f0d9a8;padding-top:8px;">
+        <div style="font-size:12px;color:#8a5a1a;font-weight:600;margin-bottom:6px;">Дополнительно (взаимоисключающие):</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:4px;">
+          <input type="checkbox" ${it.romanCircles?'checked':''} onchange="toggleRomanCircles('${r.id}','${it.id}',this.checked);">
+          Вставить колечки (100 ₽/кв.м)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+          <input type="checkbox" ${it.romanAssembly?'checked':''} onchange="toggleRomanAssembly('${r.id}','${it.id}',this.checked);">
+          Сборка на карниз (200 ₽/кв.м)
+        </label>
+        ${it.romanCircles && w && h ? `<div class="auto-info" style="margin-top:4px;">Колечки: ${w.toFixed(2)} × ${h.toFixed(2)} = ${(w*h).toFixed(2)} кв.м × 100 ₽ = ${fmt(w*h*100)}</div>` : ''}
+        ${it.romanAssembly && w && h ? `<div class="auto-info" style="margin-top:4px;">Сборка: ${w.toFixed(2)} × ${h.toFixed(2)} = ${(w*h).toFixed(2)} кв.м × 200 ₽ = ${fmt(w*h*200)}</div>` : ''}
+      </div>
+    </div>` : '';
+
+  // Блок синтепона для покрывал
+  const synthBlock = (isCoverCategory(it.category) || it.synthEnabled) ? `
+    <div class="synth-block">
+      <label class="synth-title">
+        <input type="checkbox" ${it.synthEnabled?'checked':''} onchange="updateItem('${r.id}','${it.id}','synthEnabled',this.checked);render();">
+        Синтепон (авто, по короткой стороне)
+      </label>
+      ${it.synthEnabled ? `
+        <div class="auto-row">
+          <select onchange="updateItem('${r.id}','${it.id}','synthType',parseInt(this.value));render();">
+            ${SYNTH_TYPES.map((s,i)=>`<option value="${i}" ${it.synthType===i?'selected':''}>${s.name} — ${s.price} ₽/м</option>`).join('')}
+          </select>
+          <div></div><div></div>
+        </div>
+        <div class="auto-info">
+          ${w && h ? `Метраж = min(${w}, ${h}) = <b>${Math.min(w,h).toFixed(2)} м</b> × ${SYNTH_TYPES[it.synthType||0].price} ₽ = ${fmt(Math.min(w,h)*SYNTH_TYPES[it.synthType||0].price)}` : 'Введите ширину и высоту.'}
+        </div>` : ''}
+    </div>` : '';
+
+  // Блок мастера
+  const masterBlock = `
+    <div class="master-block">
+      <div class="master-title">👤 Исполнитель</div>
+      <div class="master-row">
+        <select onchange="updateItem('${r.id}','${it.id}','masterIdx',parseInt(this.value));render();">
+          <option value="0" ${it.masterIdx===0?'selected':''}>Швея 1</option>
+          <option value="1" ${it.masterIdx===1?'selected':''}>Швея 2</option>
+          <option value="2" ${it.masterIdx===2?'selected':''}>Швея 3</option>
+          <option value="3" ${it.masterIdx===3?'selected':''}>Не указан</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+          <input type="checkbox" ${it.masterCuts?'checked':''} onchange="updateItem('${r.id}','${it.id}','masterCuts',this.checked);recalc();">
+          Кроит сама
+        </label>
+      </div>
+    </div>`;
+
+  // Строки
+  let linesHtml = '';
+  it.lines.forEach((l,idx)=>{
+    let opts = '', unit = '', price = 0;
+    if(l.source==='extra'){
+      opts = EXTRA_OPS.map((o,i)=>`<option value="${i}" ${l.ref===i?'selected':''}>${o.name}</option>`).join('');
+      const op = EXTRA_OPS[l.ref]; if(op){unit=op.unit;price=op.price;}
+      linesHtml += `<div class="line-row">
+        <select onchange="updateLine('${r.id}','${it.id}',${idx},'ref',this.value)">${opts}</select>
+        <input type="text" value="${esc(l.note)}" placeholder="уточнение" oninput="updateLine('${r.id}','${it.id}',${idx},'note',this.value)" style="font-size:12px;">
+        <input type="number" value="${l.qty}" step="0.1" min="0" oninput="updateLine('${r.id}','${it.id}',${idx},'qty',this.value)" onchange="render();">
+        <span>${unit} × ${price} ₽</span>
+        <span class="line-sum">${fmt(price*l.qty)}</span>
+        <button class="danger" onclick="removeLine('${r.id}','${it.id}',${idx})">✕</button>
+      </div>`;
+    } else if(l.source==='material'){
+      opts = MATERIALS.map((m,i)=>`<option value="${i}" ${l.ref===i?'selected':''}>${m.name}</option>`).join('');
+      const mat = MATERIALS[l.ref]; if(mat){unit=mat.unit;price=mat.price;}
+      linesHtml += `<div class="line-row custom" style="grid-template-columns:3fr 1fr 1fr 1fr auto;">
+        <select onchange="updateLine('${r.id}','${it.id}',${idx},'ref',this.value)">${opts}</select>
+        <input type="number" value="${l.qty}" step="0.1" min="0" oninput="updateLine('${r.id}','${it.id}',${idx},'qty',this.value)" onchange="render();">
+        <span>${unit} × ${price} ₽</span>
+        <span class="line-sum">${fmt(price*l.qty)}</span>
+        <button class="danger" onclick="removeLine('${r.id}','${it.id}',${idx})">✕</button>
+      </div>`;
+    } else {
+      linesHtml += `<div class="line-row custom">
+        <input type="text" value="${esc(l.name)}" placeholder="Название" oninput="updateLine('${r.id}','${it.id}',${idx},'name',this.value)">
+        <input type="number" value="${l.price||0}" placeholder="Цена" oninput="updateLine('${r.id}','${it.id}',${idx},'price',this.value)" onchange="render();">
+        <select onchange="updateLine('${r.id}','${it.id}',${idx},'unit',this.value)">
+          ${['м','кв.м','шт','пара'].map(u=>`<option ${l.unit===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+        <input type="number" value="${l.qty}" step="0.1" min="0" oninput="updateLine('${r.id}','${it.id}',${idx},'qty',this.value)" onchange="render();">
+        <button class="danger" onclick="removeLine('${r.id}','${it.id}',${idx})">✕</button>
+      </div>`;
+    }
+  });
+
+  let mh = '';
+  const mk = it.markups||{};
+  MARKUPS.forEach(m=>{
+    const val = mk[m.id];
+    const ck = !!val;
+    const bt = (val && typeof val==='object' && val.base) ? val.base : 'base';
+    mh += `<div class="markup-item">
+      <input type="checkbox" ${ck?'checked':''} onchange="toggleMarkup('${r.id}','${it.id}','${m.id}')">
+      <span>${m.name}</span>
+      <span class="pct">+${m.pct}%</span>
+      ${ck?`<select onchange="setMarkupBase('${r.id}','${it.id}','${m.id}',this.value)" style="width:auto;font-size:11px;">
+        <option value="base" ${bt==='base'?'selected':''}>от базы (в цену)</option>
+        <option value="volume" ${bt==='volume'?'selected':''}>от объёма (строкой)</option>
+      </select>`:''}
+    </div>`;
+  });
+
+  return `
+    <div class="item">
+      <div class="item-header">
+        <select onchange="updateItem('${r.id}','${it.id}','category',this.value);updateItem('${r.id}','${it.id}','mainWork','');render();">
+          ${cats.map(x=>`<option ${it.category===x?'selected':''}>${x}</option>`).join('')}
+        </select>
+        <button class="danger" onclick="removeItem('${r.id}','${it.id}')">✕ Удалить</button>
+      </div>
+      ${mainRow}
+      ${dims}
+      ${autoSeam}
+      ${autoDecor}
+      ${romanBlock}
+      ${synthBlock}
+      ${masterBlock}
+      ${linesHtml}
+      <div class="add-buttons">
+        <button class="small secondary" onclick="addLine('${r.id}','${it.id}','extra')">+ Доп. операция</button>
+        <button class="small secondary" onclick="addLine('${r.id}','${it.id}','material')">+ Материал</button>
+        <button class="small secondary" onclick="addLine('${r.id}','${it.id}','custom')">+ Своя строка</button>
+      </div>
+      <div style="font-size:13px;color:#666;font-weight:600;margin:12px 0 4px;">Наценки</div>
+      <div class="markup-list">${mh}</div>
+      <div class="subtotal"><span>Итого по изделию:</span><span>${fmt(c.total)}</span></div>
+    </div>`;
+}
+
+// ==================== ПЕЧАТЬ ====================
+function printDoc(){
+  syncHeaderToState();
+  const rt = calcAllRooms();
+  const mt = rt * urgencyPct(state);
+  const gt = rt + mt;
+
+  let html = `
+    <h1>РАСЧЁТ СТОИМОСТИ ПОШИВА</h1>
+    <div class="print-header">
+      <div><b>Заказ №:</b> ${esc(state.orderNum)||'—'}</div>
+      <div><b>Готовность:</b> ${esc(state.readyDate)||'—'}</div>
+      <div><b>Дизайнер:</b> ${esc(state.designer)||'—'}</div>
+      <div><b>Проект:</b> ${esc(state.projectName)||'—'}</div>
+    </div>`;
+
+  state.rooms.forEach(r=>{
+    if(!r.enabled) return;
+    const rn = r.name==='custom' ? r.customName : r.name;
+    const rt2 = calcRoom(r);
+    html += `<div class="print-room"><h2>${esc(rn)||'Комната'}</h2>`;
+    r.items.forEach(it=>{
+      const c = calcItem(it);
+      if(!c.work) return;
+      html += `<div class="print-item"><h3>${c.work.name}</h3><table class="print-table">`;
+      const qLabel = c.effQty > c.qty ? `${c.qty} м (мин. 2 м)` : `${c.qty} ${c.work.unit}`;
+      const pl = c.basePct > 0 ? `${c.work.price} ₽ +${c.basePct}% = ${Math.round(c.effectivePrice)} ₽` : `${c.work.price} ₽`;
+      html += `<tr><td>${qLabel} × ${pl}</td><td>${fmt(c.baseWithMarkups)}</td></tr>`;
+      c.linesList.forEach(l=>{
+        html += `<tr><td>${esc(l.name)} — ${l.qty.toFixed(2)} ${l.unit} × ${l.price} ₽</td><td>${fmt(l.sum)}</td></tr>`;
+      });
+      c.volumeMarkupsList.forEach(m=>{
+        html += `<tr><td>${m.name} (+${m.pct}%)</td><td>${fmt(m.sum)}</td></tr>`;
+      });
+      html += `</table><div class="print-subtotal">Итого: ${fmt(c.total)}</div></div>`;
+    });
+    html += `<div class="print-subtotal">ПОДЫТОГ ПО КОМНАТЕ: ${fmt(rt2)}</div></div>`;
+  });
+
+  html += `<div class="print-markups">`;
+  html += `<div><b>Сумма по комнатам:</b> ${fmt(rt)}</div>`;
+  if(state.urgency50) html += `<div>Срочность (+50%): ${fmt(rt*0.5)}</div>`;
+  if(state.urgency100) html += `<div>Очень срочно (+100%): ${fmt(rt*1.0)}</div>`;
+  html += `</div>`;
+  html += `<div class="print-grand">ИТОГО ПО ПРОЕКТУ: ${fmt(gt)}</div>`;
+
+  // Очищаем ведомость, иначе при печати она выводится вместе с расчётом
+  document.getElementById('printMastersDoc').innerHTML = '';
+  document.getElementById('printDoc').innerHTML = html;
+  window.print();
+}
+
+// ==================== ВЕДОМОСТЬ ЗП ====================
+function calcMasters(){
+  const masters = [
+    {name:'Швея 1',sum:0,items:0},
+    {name:'Швея 2',sum:0,items:0},
+    {name:'Швея 3',sum:0,items:0},
+    {name:'Закройщик',sum:0,items:0}
+  ];
+  let totalWork = 0, totalMaterials = 0;
+
+  state.rooms.forEach(r=>{
+    if(!r.enabled) return;
+    r.items.forEach(it=>{
+      const c = calcItem(it);
+      if(!c.work) return;
+      // Работа = база с наценками + допы без материалов + объёмные наценки
+      const workSum = c.baseWithMarkups + (c.linesSum - c.materialsSum) + c.volumeMarkupsSum;
+      const matSum = c.materialsSum;
+      totalWork += workSum;
+      totalMaterials += matSum;
+
+      const fund = workSum / 2;
+      const mi = it.masterIdx;
+      if(mi === 3) return; // не указан
+
+      if(it.masterCuts){
+        // Кроит сама → 100% швее
+        masters[mi].sum += fund;
+        masters[mi].items += 1;
+      } else {
+        // С закройщиком: 30% закройщику, 70% швее
+        masters[mi].sum += fund * 0.7;
+        masters[3].sum += fund * 0.3;
+        masters[mi].items += 1;
+        masters[3].items += 1;
+      }
+    });
+  });
+
+  const totalFund = totalWork / 2;
+  const profit = totalWork / 2;
+  return {masters, totalWork, totalMaterials, totalFund, profit};
+}
+
+function printMasters(){
+  syncHeaderToState();
+  const {masters, totalWork, totalMaterials, totalFund, profit} = calcMasters();
+  const totalProject = totalWork + totalMaterials;
+
+  let html = `
+    <h1>ВЕДОМОСТЬ ЗП ПО ПРОЕКТУ</h1>
+    <div class="print-header">
+      <div><b>Заказ №:</b> ${esc(state.orderNum)||'—'}</div>
+      <div><b>Проект:</b> ${esc(state.projectName)||'—'}</div>
+      <div><b>Дизайнер:</b> ${esc(state.designer)||'—'}</div>
+      <div><b>Дата готовности:</b> ${esc(state.readyDate)||'—'}</div>
+    </div>
+    <table class="print-table" style="margin-bottom:10px;">
+      <tr><td>Стоимость работ (без материалов)</td><td>${fmt(totalWork)}</td></tr>
+      <tr><td>Расходные материалы</td><td>${fmt(totalMaterials)}</td></tr>
+      <tr><td><b>Всего по проекту</b></td><td><b>${fmt(totalProject)}</b></td></tr>
+    </table>
+    <table class="print-table" style="margin-bottom:10px;">
+      <tr><td>Фонд мастеров (50%)</td><td>${fmt(totalFund)}</td></tr>
+      <tr><td>Прибыль салона (50%)</td><td>${fmt(profit)}</td></tr>
+    </table>
+    <div class="print-room" style="margin-top:12px;">
+      <h2>РАСПРЕДЕЛЕНИЕ ФОНДА</h2>
+      <table class="print-table">
+  `;
+  masters.forEach(m=>{
+    html += `<tr><td>${m.name} <small style="color:#888;">(${m.items} изд.)</small></td><td><b>${fmt(m.sum)}</b></td></tr>`;
+  });
+  html += `</table></div>`;
+
+  // Очищаем расчёт, иначе при печати он выводится вместе с ведомостью
+  document.getElementById('printDoc').innerHTML = '';
+  document.getElementById('printMastersDoc').innerHTML = html;
+  window.print();
+}
+
+// ==================== ХРАНЕНИЕ ====================
+const STORAGE_KEY = 'curtain_calc_orders';
+
+function getSavedOrders(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){ return []; }
+}
+function setSavedOrders(arr){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+  catch(e){ alert('Не удалось сохранить: браузер запретил хранилище. Сделайте резервную копию.'); }
+}
+
+function saveToCloud(){
+  syncHeaderToState();
+  const orders = getSavedOrders();
+  const id = 'order_' + Date.now();
+  const order = {
+    id,
+    savedAt: new Date().toISOString(),
+    state: JSON.parse(JSON.stringify(state))
+  };
+  // Если есть — обновить по совпадению orderNum+projectName
+  const existingIdx = orders.findIndex(o=>o.state.orderNum && o.state.orderNum === state.orderNum && o.state.projectName === state.projectName);
+  if(existingIdx >= 0){
+    orders[existingIdx] = order;
+  } else {
+    orders.push(order);
+  }
+  setSavedOrders(orders);
+  alert('✅ Расчёт сохранён в «Мои расчёты»');
+}
+
+// Полная сумма сохранённого расчёта (как в самом расчёте, с допами, наценками и срочностью)
+function calcStateTotal(st){
+  const rooms = (st.rooms||[]).reduce((s,r)=>{
+    if(!r.enabled) return s;
+    return s + (r.items||[]).reduce((ss,i)=>ss + calcItem(i).total, 0);
+  }, 0);
+  return rooms * (1 + urgencyPct(st));
+}
+
+function showSaved(){
+  const panel = document.getElementById('savedPanel');
+  const list = document.getElementById('savedList');
+  const orders = getSavedOrders().reverse();
+  if(!orders.length){
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Пока нет сохранённых расчётов</div>';
+  } else {
+    list.innerHTML = orders.map(o=>{
+      const st = o.state||{};
+      const total = calcStateTotal(st);
+      const date = new Date(o.savedAt).toLocaleDateString('ru-RU');
+      return `<div class="saved-item">
+        <div class="saved-info">
+          <div class="saved-name">${st.orderNum?('№ '+esc(st.orderNum)+' — '):''}${esc(st.projectName)||'Без названия'}</div>
+          <div class="saved-date">${date} · ${esc(st.designer)}</div>
+        </div>
+        <div class="saved-sum">${fmt(total)}</div>
+        <button class="small" onclick="loadOrder('${o.id}')">Открыть</button>
+        <button class="small danger" onclick="deleteOrder('${o.id}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+  panel.style.display = 'block';
+}
+function hideSaved(){ document.getElementById('savedPanel').style.display = 'none'; }
+
+// Счётчики продолжают нумерацию загруженного расчёта, чтобы id не повторялись
+function restoreCounters(){
+  const num = s => parseInt(String(s||'').replace(/\D/g,''))||0;
+  roomCounter = 0; itemCounter = 0;
+  state.rooms.forEach(r=>{
+    roomCounter = Math.max(roomCounter, num(r.id));
+    (r.items||[]).forEach(i=>{ itemCounter = Math.max(itemCounter, num(i.id)); });
+  });
+}
+
+function loadOrder(id){
+  const orders = getSavedOrders();
+  const order = orders.find(o=>o.id===id);
+  if(!order){ alert('Расчёт не найден'); return; }
+  state = JSON.parse(JSON.stringify(order.state));
+  if(!Array.isArray(state.rooms)) state.rooms = [];
+  restoreCounters();
+  document.getElementById('orderNum').value = state.orderNum||'';
+  document.getElementById('readyDate').value = state.readyDate||'';
+  document.getElementById('designer').value = state.designer||'';
+  document.getElementById('projectName').value = state.projectName||'';
+  document.getElementById('urgency50').checked = state.urgency50||false;
+  document.getElementById('urgency100').checked = state.urgency100||false;
+  hideSaved();
+  render();
+}
+
+function deleteOrder(id){
+  if(!confirm('Удалить этот расчёт?')) return;
+  const orders = getSavedOrders().filter(o=>o.id!==id);
+  setSavedOrders(orders);
+  showSaved();
+}
+
+function newOrder(){
+  if(!confirm('Начать новый расчёт? Текущий будет очищен (если не сохранён в список).')) return;
+  state = {orderNum:'',readyDate:'',designer:'',projectName:'',rooms:[],urgency50:false,urgency100:false};
+  document.getElementById('orderNum').value='';
+  document.getElementById('readyDate').value='';
+  document.getElementById('designer').value='';
+  document.getElementById('projectName').value='';
+  document.getElementById('urgency50').checked=false;
+  document.getElementById('urgency100').checked=false;
+  roomCounter=0; itemCounter=0;
+  hideSaved();
+  render();
+}
+
+function exportBackup(){
+  const orders = getSavedOrders();
+  const json = JSON.stringify(orders, null, 2);
+  const blob = new Blob([json],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
+  a.href = url;
+  a.download = 'Заказы_'+d+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev=>{
+      try{
+        const imported = JSON.parse(ev.target.result);
+        if(!Array.isArray(imported)) throw new Error('Неверный формат');
+        if(!confirm('Добавить ' + imported.length + ' расчётов из файла? Существующие останутся.')) return;
+        const cur = getSavedOrders();
+        setSavedOrders(cur.concat(imported));
+        alert('✅ Импортировано: ' + imported.length);
+        showSaved();
+      }catch(err){ alert('Ошибка: '+err.message); }
+    };
+    r.readAsText(f);
+  };
+  input.click();
+}
+
+// ==================== СОБЫТИЯ ====================
+function syncHeaderToState(){
+  state.orderNum = document.getElementById('orderNum').value;
+  state.readyDate = document.getElementById('readyDate').value;
+  state.designer = document.getElementById('designer').value;
+  state.projectName = document.getElementById('projectName').value;
+  state.urgency50 = document.getElementById('urgency50').checked;
+  state.urgency100 = document.getElementById('urgency100').checked;
+}
+document.getElementById('orderNum').addEventListener('input',e=>state.orderNum=e.target.value);
+document.getElementById('readyDate').addEventListener('input',e=>state.readyDate=e.target.value);
+document.getElementById('designer').addEventListener('input',e=>state.designer=e.target.value);
+document.getElementById('projectName').addEventListener('input',e=>state.projectName=e.target.value);
+// Срочность: включается только один вариант
+document.getElementById('urgency50').addEventListener('change',e=>{
+  state.urgency50=e.target.checked;
+  if(state.urgency50){ state.urgency100=false; document.getElementById('urgency100').checked=false; }
+  recalc();
+});
+document.getElementById('urgency100').addEventListener('change',e=>{
+  state.urgency100=e.target.checked;
+  if(state.urgency100){ state.urgency50=false; document.getElementById('urgency50').checked=false; }
+  recalc();
+});
+
+render();
+</script>
+</body>
+</html>
